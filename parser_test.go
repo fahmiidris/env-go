@@ -92,6 +92,34 @@ func TestParseUnquotedWithInlineComment(t *testing.T) {
 	assertMap(t, got, expected)
 }
 
+func TestParseVariableExpansion(t *testing.T) {
+	input := `
+		DB_USER=postgres
+		DB_PASS=postgres
+		DB_HOST=localhost
+		DB_PORT=5432
+		DB_NAME=postgres
+		DATABASE_URL="postgres://$DB_USER:$DB_PASS@$DB_HOST:$DB_PORT/$DB_NAME"
+	`
+
+	expected := map[string]string{
+		"DB_USER":      "postgres",
+		"DB_PASS":      "postgres",
+		"DB_HOST":      "localhost",
+		"DB_PORT":      "5432",
+		"DB_NAME":      "postgres",
+		"DATABASE_URL": "postgres://postgres:postgres@localhost:5432/postgres",
+	}
+
+	got, err := Parse(strings.NewReader(input))
+
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	assertMap(t, got, expected)
+}
+
 func assertMap(t *testing.T, got, want map[string]string) {
 	t.Helper()
 

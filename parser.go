@@ -4,15 +4,15 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"os"
 	"strings"
 	"unicode"
 )
 
 // Parse reads from an io.Reader and returns a map of key-value pairs.
 func Parse(r io.Reader) (map[string]string, error) {
-	scanner := bufio.NewScanner(r)
-
 	result := make(map[string]string)
+	scanner := bufio.NewScanner(r)
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -39,7 +39,7 @@ func Parse(r io.Reader) (map[string]string, error) {
 		if len(value) > 0 {
 			switch value[0] {
 			case '\'':
-				// Single quoted: no escape sequences
+				// Single quoted: no escape sequences, no expansion
 				v, err := parseSingleQuoted(value)
 
 				if err != nil {
@@ -47,18 +47,20 @@ func Parse(r io.Reader) (map[string]string, error) {
 				}
 
 				value = v
+
 			case '"':
-				// Double quoted: handle escapes
+				// Double quoted: handle escapes and expansion
 				v, err := parseDoubleQuoted(value)
 
 				if err != nil {
 					return nil, err
 				}
 
-				value = v
+				value = expand(v, result)
+
 			default:
-				// Unquoted: handle inline comments
-				value = parseUnquoted(value)
+				// Unquoted: handle inline comments and expansion
+				value = expand(parseUnquoted(value), result)
 			}
 		}
 
@@ -70,6 +72,16 @@ func Parse(r io.Reader) (map[string]string, error) {
 	}
 
 	return result, nil
+}
+
+func expand(s string, current map[string]string) string {
+	return os.Expand(s, func(k string) string {
+		if v, ok := current[k]; ok {
+			return v
+		}
+
+		return os.Getenv(k)
+	})
 }
 
 func parseSingleQuoted(s string) (string, error) {
@@ -98,21 +110,26 @@ func parseDoubleQuoted(s string) (string, error) {
 			switch c {
 			case 'n':
 				sb.WriteByte('\n')
+
 			case 'r':
 				sb.WriteByte('\r')
+
 			case 't':
 				sb.WriteByte('\t')
+
 			case '\\':
 				sb.WriteByte('\\')
+
 			case '"':
 				sb.WriteByte('"')
+
 			default:
 				sb.WriteByte('\\')
 				sb.WriteByte(c)
+
 			}
 
 			escaped = false
-
 			continue
 		}
 
@@ -142,9 +159,6 @@ func parseUnquoted(s string) string {
 				return ""
 			}
 
-			// If it's something like VAR=val#comment (no space),
-			// some parsers treat it as part of value, others as comment.
-			// Let's be consistent and treat any # as start of comment if not quoted.
 			return strings.TrimSpace(s[:i])
 		}
 	}
