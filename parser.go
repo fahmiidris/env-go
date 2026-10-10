@@ -9,7 +9,10 @@ import (
 	"unicode"
 )
 
-// Parse reads from an io.Reader and returns a map of key-value pairs.
+// Parse reads dotenv content from an io.Reader and returns a map of
+// key-value pairs. It supports blank lines and "#" comments, an "export "
+// prefix, single and double quoted values, and $VAR/${VAR} expansion
+// against previously parsed keys and the process environment.
 func Parse(r io.Reader) (map[string]string, error) {
 	result := make(map[string]string)
 	scanner := bufio.NewScanner(r)
@@ -17,15 +20,15 @@ func Parse(r io.Reader) (map[string]string, error) {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 
-		// Skip empty lines and comments
+		// Skip empty lines and comment-only lines.
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 
-		// Strip "export " prefix
+		// Strip a leading "export " prefix.
 		line = strings.TrimPrefix(line, "export ")
 
-		// Find the first '='
+		// Find the first '='; lines without one are ignored.
 		keyPart, valuePart, found := strings.Cut(line, "=")
 
 		if !found {
@@ -35,11 +38,11 @@ func Parse(r io.Reader) (map[string]string, error) {
 		key := strings.TrimSpace(keyPart)
 		value := strings.TrimSpace(valuePart)
 
-		// Handle quoting
+		// Handle the quoting style indicated by the first character.
 		if len(value) > 0 {
 			switch value[0] {
 			case '\'':
-				// Single quoted: no escape sequences, no expansion
+				// Single-quoted values support neither escaping nor expansion.
 				v, err := parseSingleQuoted(value)
 
 				if err != nil {
@@ -49,7 +52,7 @@ func Parse(r io.Reader) (map[string]string, error) {
 				value = v
 
 			case '"':
-				// Double quoted: handle escapes and expansion
+				// Double-quoted values support escaping and expansion.
 				v, err := parseDoubleQuoted(value)
 
 				if err != nil {
@@ -59,7 +62,7 @@ func Parse(r io.Reader) (map[string]string, error) {
 				value = expand(v, result)
 
 			default:
-				// Unquoted: handle inline comments and expansion
+				// Unquoted values support inline comments and expansion.
 				value = expand(parseUnquoted(value), result)
 			}
 		}
@@ -86,13 +89,13 @@ func expand(s string, current map[string]string) string {
 
 func parseSingleQuoted(s string) (string, error) {
 	if len(s) < 2 || s[0] != '\'' {
-		return "", errors.New("invalid single quoted string")
+		return "", errors.New("invalid single quoted string.")
 	}
 
 	content, _, found := strings.Cut(s[1:], "'")
 
 	if !found {
-		return "", errors.New("unclosed single quote")
+		return "", errors.New("unclosed single quote.")
 	}
 
 	return content, nil
@@ -145,7 +148,7 @@ func parseDoubleQuoted(s string) (string, error) {
 		sb.WriteByte(c)
 	}
 
-	return "", errors.New("unclosed double quote")
+	return "", errors.New("unclosed double quote.")
 }
 
 func parseUnquoted(s string) string {

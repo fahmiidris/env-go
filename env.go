@@ -5,8 +5,10 @@ import (
 	"os"
 )
 
-// Load reads the specified files and sets environment variables
-// if they are not already set.
+// Load reads the specified files and sets environment variables if they
+// are not already set. When no filenames are given, ".env" is used; a
+// missing default ".env" is silently ignored, but a missing
+// explicitly-named file is an error.
 func Load(filenames ...string) error {
 	if len(filenames) == 0 {
 		filenames = []string{".env"}
@@ -22,7 +24,8 @@ func Load(filenames ...string) error {
 }
 
 // Overload reads the specified files and sets environment variables,
-// overwriting any existing ones.
+// overwriting any existing ones. When no filenames are given, ".env" is
+// used.
 func Overload(filenames ...string) error {
 	if len(filenames) == 0 {
 		filenames = []string{".env"}
@@ -37,7 +40,9 @@ func Overload(filenames ...string) error {
 	return nil
 }
 
-// Read reads the specified files and returns a map of key-value pairs.
+// Read reads the specified files and returns a map of key-value pairs,
+// with later files taking precedence over earlier ones. When no filenames
+// are given, ".env" is used.
 func Read(filenames ...string) (map[string]string, error) {
 	if len(filenames) == 0 {
 		filenames = []string{".env"}
@@ -63,7 +68,7 @@ func loadFile(filename string, overload bool) error {
 
 	if err != nil {
 		if os.IsNotExist(err) && filename == ".env" {
-			return nil // Ignore missing default .env
+			return nil // Ignore a missing default ".env" file.
 		}
 
 		return err
