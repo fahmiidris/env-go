@@ -1,9 +1,9 @@
-# env
+# env-go
 
 Load `.env` files into environment variables.
 
-`env` is a small, dependency-free Go package that parses dotenv-style files
-and applies them to the process environment.
+`env-go` is a small, dependency-free Go package (package name `env`) that
+parses dotenv-style files and applies them to the process environment.
 
 ## Features
 
@@ -59,7 +59,7 @@ func main() {
 	databaseURL := os.Getenv("DATABASE_URL")
 	fmt.Println(databaseURL)
 
-	// Read a value with.
+	// Read a value with GetEnv.
 	host := env.GetEnv("HOST")
 	fmt.Println(host)
 
