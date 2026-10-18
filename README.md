@@ -17,7 +17,7 @@ parses dotenv-style files and applies them to the process environment.
 - Three file-level modes: `Load` (never overwrite), `Overload` (always
   overwrite), and `Read` (merge into a map without touching the environment)
 - A missing default `.env` is silently ignored by `Load` and `Overload`
-- `GetEnv` returns an `EnvValue` with an `OrDefault` fallback method;
+- `GetEnv` returns an `EnvValue` with `String` and `OrDefault` methods;
   `GetEnvOrDefault` remains available for compatibility
 - Standard library only
 
@@ -59,8 +59,9 @@ func main() {
 	databaseURL := os.Getenv("DATABASE_URL")
 	fmt.Println(databaseURL)
 
-	// Read a value with GetEnv.
-	host := env.GetEnv("HOST")
+	// Read a value with GetEnv. EnvValue prints like a string and compares
+	// with string literals; call String for a plain string.
+	host := env.GetEnv("HOST").String()
 	fmt.Println(host)
 
 	// Read a value with a fallback when it is missing or empty.
@@ -87,8 +88,14 @@ func main() {
 | `Read(files ...string) (map[string]string, error)` | Merges files into a map without touching the environment.                  |
 | `Parse(r io.Reader) (map[string]string, error)`    | Parses dotenv content from any reader into a map.                          |
 | `GetEnv(key string) EnvValue`                      | Returns an environment value, or an empty value if unset.                  |
+| `EnvValue.String() string`                         | Returns the value as a plain string; implements `fmt.Stringer`.            |
 | `EnvValue.OrDefault(defaultValue string) string`   | Returns the value, or `defaultValue` if empty.                             |
 | `GetEnvOrDefault(key, defaultValue string) string` | Compatibility helper equivalent to `GetEnv(key).OrDefault(defaultValue)`.  |
+
+`EnvValue` is string-like but not a `string`. It prints with `fmt` and
+compares with string literals directly, while assigning it to a `string`
+or passing it to a `string` parameter requires `value.String()` (or the
+`string(value)` conversion).
 
 An empty file list means `.env` for every file-level function. `Load` and
 `Overload` ignore a missing default `.env`, while an explicitly named

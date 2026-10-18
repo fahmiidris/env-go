@@ -5,6 +5,11 @@ import "os"
 // EnvValue is a string-like environment variable value.
 type EnvValue string
 
+// String returns the value as a string and implements fmt.Stringer.
+func (value EnvValue) String() string {
+	return string(value)
+}
+
 // OrDefault returns the value, or defaultValue if it is empty.
 func (value EnvValue) OrDefault(defaultValue string) string {
 	if value == "" {
