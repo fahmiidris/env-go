@@ -19,6 +19,18 @@ func TestGetEnv(t *testing.T) {
 	}
 }
 
+func TestEnvValueString(t *testing.T) {
+	t.Setenv("ENVVALUE_SET", "ENVVALUE_SET_VALUE")
+
+	if got := GetEnv("ENVVALUE_SET").String(); got != "ENVVALUE_SET_VALUE" {
+		t.Errorf("GetEnv().String() = %q, want %q.", got, "ENVVALUE_SET_VALUE")
+	}
+
+	if got := GetEnv("ENVVALUE_UNSET").String(); got != "" {
+		t.Errorf("GetEnv().String() = %q, want empty string.", got)
+	}
+}
+
 func TestGetEnvOrDefault(t *testing.T) {
 	t.Setenv("GETENVDEF_KEY", "GETENVDEF_VALUE")
 	t.Setenv("GETENVDEF_EMPTY", "")
